@@ -363,14 +363,14 @@ def _classifier(root, file_, manager_dict):
         manager_dict['normal'].append(file_)
 
 
-def main():
+def main(raw_args=None):
     # Arg Parser#
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dirpath', help='directory path to be classified', required=True)
     parser.add_argument('-o', '--output', help='result output path')
     parser.add_argument('-v', '--verbose', help='verbose mode', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
 
     # arg set on edit configuration
 
