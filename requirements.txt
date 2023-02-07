@@ -1,4 +1,6 @@
 olefile==0.46
 oletools==0.54.2
 requests==2.22.0
-lxml==4.3.3
+lxml~=4.9.2
+setuptools~=65.5.1
+PyQt5~=5.15.8
