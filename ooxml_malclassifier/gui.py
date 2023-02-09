@@ -9,8 +9,24 @@
 
 from PyQt5 import QtCore, QtWidgets
 import json
+import logging
 from mal_classifier import main
 
+
+class QTextEditLogger(logging.Handler):
+    def __init__(self, parent):
+        super().__init__()
+        self.widget = QtWidgets.QPlainTextEdit(parent)
+        self.widget.setReadOnly(True)
+        self.widget.setFixedHeight(150)
+        self.widget.verticalScrollBar().setValue(
+            self.widget.verticalScrollBar().maximum())
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget.appendPlainText(msg)
+        self.widget.ensureCursorVisible()
+        self.widget.viewport().update()
 
 class Ui_Dialog(object):
     def __init__(self):
@@ -46,6 +62,14 @@ class Ui_Dialog(object):
         self.listWidget.setObjectName("listWidget")
         self.horizontalLayout_3.addWidget(self.listWidget)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
+        # self.logWidget = QtWidgets.QPlainTextEdit(Dialog)
+        # self.logWidget.setReadOnly(True)
+        # self.verticalLayout.addWidget(self.logWidget)
+
+        logTextBox = QTextEditLogger(Dialog)
+        logging.getLogger().addHandler(logTextBox)
+        self.verticalLayout.addWidget(logTextBox.widget)
+
         self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
         self.retranslateUi(Dialog)
 
@@ -67,7 +91,7 @@ class Ui_Dialog(object):
         if self.dirPathLineEdit.text() == '':
             print('Missing directory path')
             return
-        main(['-d', self.dirPathLineEdit.text()])
+        main(self.dirPathLineEdit.text())
         self.scan_result = json.load(open('output.json'))
         self.listWidget.clear()
         for file_info in self.scan_result.values():

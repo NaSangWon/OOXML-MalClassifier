@@ -363,19 +363,12 @@ def _classifier(root, file_, manager_dict):
         manager_dict['normal'].append(file_)
 
 
-def main(raw_args=None):
-    # Arg Parser#
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--dirpath', help='directory path to be classified', required=True)
-    parser.add_argument('-o', '--output', help='result output path')
-    parser.add_argument('-v', '--verbose', help='verbose mode', action='store_true')
-    args = parser.parse_args(raw_args)
+def main(dir_path, output_path="output.json", verbose=False):
 
     # arg set on edit configuration
 
     start = timeit.default_timer()
-    root_path = args.dirpath
+    root_path = dir_path
     input_list = os.listdir(root_path)
 
     manager = multiprocessing.Manager()
@@ -387,7 +380,7 @@ def main(raw_args=None):
     # Save file info
     pool_dict['file_info'] = manager.dict()
     # print processing data on console
-    if args.verbose is True:
+    if verbose is True:
         pool_dict['verbose'] = True
 
     num_cores = multiprocessing.cpu_count()  # number of cpu core
@@ -400,10 +393,7 @@ def main(raw_args=None):
     stop = timeit.default_timer()
     logging.info("time taken: {time}".format(time=str(stop - start)))
 
-    output = "output.json"
-    if args.output is not None:
-        output = args.output
-    with open(output, "w") as write_file:
+    with open(output_path, "w") as write_file:
         json.dump(pool_dict['file_info'].copy(), write_file, indent=4)
 
     print("[Result (File)]")
@@ -415,7 +405,3 @@ def main(raw_args=None):
     print("mal: ", len(pool_dict['malicious']))
     print("suspicious: ", len(pool_dict['suspicious']))
     print("normal: ", len(pool_dict['normal']))
-
-
-if __name__ == "__main__":
-    main()
