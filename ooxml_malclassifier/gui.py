@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 import multiprocessing
-from logging import LogRecord
 from PyQt5 import QtCore, QtWidgets
 import json
 import logging
-from logging.handlers import QueueHandler
 from mal_classifier import main
 
 Signal = QtCore.pyqtSignal
@@ -14,22 +12,6 @@ QThread = QtCore.QThread
 
 class Signaller(QtCore.QObject):
     signal = Signal(logging.LogRecord)
-
-
-class QtHandler(logging.Handler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.signaller = Signaller()
-
-    def emit(self, record):
-        s = self.format(record)
-        self.signaller.signal.emit(s, record)
-
-
-class QtQueueHandler(QueueHandler):
-
-    def emit(self, record: LogRecord) -> None:
-        super().emit(record)
 
 
 class Consumer(QThread):
@@ -105,7 +87,6 @@ class Ui_Dialog(QtCore.QObject):
         self.consumer = Consumer(self.q)
         self.consumer.popped.signal.connect(self.update_log_gui)
         self.consumer.start()
-
         app.aboutToQuit.connect(self.shutdown_consumer)
 
         self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
