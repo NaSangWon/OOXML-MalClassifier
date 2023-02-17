@@ -1,9 +1,11 @@
 import logging
+from logging.handlers import QueueHandler
 
 
 class ValidationLogger(logging.LoggerAdapter):
-    def __init__(self, name):
+    def __init__(self, name, q):
         super(ValidationLogger, self).__init__(logging.getLogger(name), {})
+        self.logger.addHandler(QueueHandler(q))
         self.data = []
         self.data_summary = {
             "Unknown compression method": 0,
@@ -29,5 +31,5 @@ class ValidationLogger(logging.LoggerAdapter):
                 self.data.append({"log": msg, "level": level})
                 log_type = extra['type']
                 self.data_summary[log_type] += 1
-            msg, kwargs = self.process(msg, kwargs)
-            self.logger.log(level, msg, *args, **kwargs)
+                msg, kwargs = self.process(msg, kwargs)
+                self.logger.log(level, msg, *args, **kwargs)

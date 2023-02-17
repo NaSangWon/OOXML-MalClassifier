@@ -7,6 +7,10 @@ import zlib
 import logging
 import json
 import multiprocessing
+from multiprocessing import current_process
+from multiprocessing import Process
+from multiprocessing import Queue
+from logging.handlers import QueueHandler
 from itertools import repeat
 from zipfile import ZipFile, BadZipFile
 logging.basicConfig(level=logging.INFO)
@@ -330,16 +334,16 @@ class OoxmlClassifier(object):
         elif self.file_info['result'] is None:
             self.file_info['result'] = 'normal'
 
-    def get_zip_analysis(self):
-        logger_ = logger.ValidationLogger(self.file_path.split('/')[-1])
-        zip_analysis.Zip(self.file_path, logger_)
-        self.file_info['zip'] = logger_.data_summary
+    def get_zip_analysis(self, q):
+        logger_adapter = logger.ValidationLogger("log." + self.file_info['fileName'], q)
+        zip_analysis.Zip(self.file_path, logger_adapter)
+        self.file_info['zip'] = logger_adapter.data_summary
 
     def get_result(self):
         pass
 
 
-def _classifier(root, file_, manager_dict):
+def _classifier(root, file_, manager_dict, q):
     file_path = os.path.join(root, file_)
     # 0) Initialize
     classifier = OoxmlClassifier(file_path)
@@ -350,7 +354,7 @@ def _classifier(root, file_, manager_dict):
     # 3) Detect malicious object with CVE vulnerability case
     classifier.detect_malicious_properties()
     # 4) Detect malicious zip structure
-    classifier.get_zip_analysis()
+    classifier.get_zip_analysis(q)
     if 'verbose' in manager_dict.keys():
         print(classifier.file_info)
     if classifier.file_info['result'] != 'NotOOXML':
@@ -363,7 +367,7 @@ def _classifier(root, file_, manager_dict):
         manager_dict['normal'].append(file_)
 
 
-def main(dir_path, output_path="output.json", verbose=False):
+def main(dir_path, q, output_path="output.json", verbose=False):
 
     # arg set on edit configuration
 
@@ -385,7 +389,7 @@ def main(dir_path, output_path="output.json", verbose=False):
 
     num_cores = multiprocessing.cpu_count()  # number of cpu core
     pool = multiprocessing.Pool(num_cores)
-    pool.starmap(_classifier, zip(repeat(root_path), input_list, repeat(pool_dict)))
+    pool.starmap(_classifier, zip(repeat(root_path), input_list, repeat(pool_dict), repeat(q)))
     pool.close()
     pool.join()
 
