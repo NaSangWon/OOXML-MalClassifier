@@ -155,6 +155,7 @@ class Ui_Dialog(QtCore.QObject):
         if dir_path == '':
             print('Missing directory path')
             return
+        self.logWidget.clear()
         self.config_thread()
         self.worker.dir_path = dir_path
         self.scanButton.setEnabled(False)
