@@ -63,7 +63,6 @@ class Ui_Dialog(QtCore.QObject):
         self.horizontalLayout.addWidget(self.label)
         self.dirPathLineEdit = QtWidgets.QLineEdit(Dialog)
         self.dirPathLineEdit.setObjectName("filePathLineEdit")
-        self.dirPathLineEdit.setText("/home/user/Downloads/ooxml/malware")  # TODO: Remove this after test
         self.horizontalLayout.addWidget(self.dirPathLineEdit)
         self.browseButton = QtWidgets.QPushButton(Dialog)
         self.browseButton.setEnabled(True)
