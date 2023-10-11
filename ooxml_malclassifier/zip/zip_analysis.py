@@ -378,10 +378,11 @@ class Zip(object):
         self.all_header.append(header)
 
     def validate(self):
-        start_header_offset = self.local_file_headers[0].start_pos
-        if start_header_offset > 0:
-            self.logger.error("Inserted data found! (Data: %s)" % self.readBytes(0, start_header_offset),
-                              extra={"type": "Inserted data"})
+        if len(self.local_file_headers) > 0:
+            start_header_offset = self.local_file_headers[0].start_pos
+            if start_header_offset > 0:
+                self.logger.error("Inserted data found! (Data: %s)" % self.readBytes(0, start_header_offset),
+                                  extra={"type": "Inserted data"})
 
         lfh_count = len(self.local_file_headers)
         cd_count = len(self.central_directories)
