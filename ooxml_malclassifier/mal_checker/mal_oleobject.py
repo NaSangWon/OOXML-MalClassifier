@@ -26,8 +26,8 @@ class OleObjectMethod(object):
                 if bool(re.match('oleObject\d{1,2}.bin', filename)):
                     if filename not in self.oleObject_bin.keys():
                         filepath = os.path.join(root, filename)
-                        with open(filepath, "r+b") as f:
-                            self.oleObject_bin[filename] = f.read()
+                        if not self._open_successful(filepath, filename):
+                            continue
                     if self.oleObject_bin[filename][:4] == bin_docfile:
                         ole_ = olefile.OleFileIO(self.oleObject_bin[filename])
                         for stream in ole_.listdir():
@@ -58,8 +58,8 @@ class OleObjectMethod(object):
             for filename in files:
                 if filename not in self.oleObject_bin.keys():
                     filepath = os.path.join(root, filename)
-                    with open(filepath, "r+b") as f:
-                        self.oleObject_bin[filename] = f.read()
+                    if not self._open_successful(filepath, filename):
+                        continue
                 if self.oleObject_bin[filename][:4] == bin_docfile:
                     ole_ = olefile.OleFileIO(self.oleObject_bin[filename])
                     for stream in ole_.listdir():
@@ -81,8 +81,8 @@ class OleObjectMethod(object):
             for filename in files:
                 if filename not in self.oleObject_bin.keys():
                     filepath = os.path.join(root, filename)
-                    with open(filepath, "r+b") as f:
-                        self.oleObject_bin[filename] = f.read()
+                    if not self._open_successful(filepath, filename):
+                        continue
                 if self.oleObject_bin[filename][:4] == bin_docfile:
                     if re.search(bin_eqn_clsid, self.oleObject_bin[filename]) is not None:
                         ole_ = olefile.OleFileIO(self.oleObject_bin[filename])
@@ -165,8 +165,8 @@ class OleObjectMethod(object):
                 if bool(re.match('oleObject\d{1,2}.bin', filename)):
                     if filename not in self.oleObject_bin.keys():
                         filepath = os.path.join(root, filename)
-                        with open(filepath, "r+b") as f:
-                            self.oleObject_bin[filename] = f.read()
+                        if not self._open_successful(filepath, filename):
+                            continue
                     if self.oleObject_bin[filename][:4] == bin_docfile:
                         ole_ = olefile.OleFileIO(self.oleObject_bin[filename])
                         for stream in ole_.listdir():
@@ -198,8 +198,8 @@ class OleObjectMethod(object):
                 if bool(re.match('oleObject\d{1,2}.bin', filename)):
                     if filename not in self.oleObject_bin.keys():
                         filepath = os.path.join(root, filename)
-                        with open(filepath, "r+b") as f:
-                            self.oleObject_bin[filename] = f.read()
+                        if not self._open_successful(filepath, filename):
+                            continue
                     if self.oleObject_bin[filename][:4] == bin_docfile:
                         ole_ = olefile.OleFileIO(filepath)
                         for stream in ole_.listdir():
@@ -217,3 +217,13 @@ class OleObjectMethod(object):
                                     logging.warning("check_ole_settingcontent_ms: {structErr}".format(structErr=structErr))
                                     logging.warning("[filename]: {filepath}".format(filepath=filepath))
         return ret
+
+    def _open_successful(self, filepath, filename):
+        """Read file. If OSError occurs, return False.
+        If successful, submit to oleObject_bin and return True"""
+        try:
+            with open(filepath, 'rb') as f:
+                self.oleObject_bin[filename] = f.read()
+            return True
+        except OSError:
+            return False
