@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-import multiprocessing
-from PyQt5 import QtCore, QtWidgets
 import json
 import logging
+import multiprocessing
+import os
+
+from PyQt5 import QtCore, QtWidgets
+
 from mal_classifier import main
 
 Signal = QtCore.pyqtSignal
@@ -32,14 +35,16 @@ class Worker(QtCore.QObject):
     finished = Signal()
     progress = Signal(int)
 
-    def __init__(self, q):
+    def __init__(self, q, manager, pool):
         super().__init__()
         self.dir_path = None
         self.q = q
+        self.manager = manager
+        self.pool = pool
 
     @Slot()
     def start(self):
-        main(self.dir_path, self.q)
+        main(self.dir_path, self.q, manager, self.pool)
         self.finished.emit()
 
 
@@ -48,7 +53,7 @@ class Ui_Dialog(QtCore.QObject):
         super().__init__()
         self.scan_result = None
 
-    def setupUi(self, Dialog):
+    def setupUi(self, Dialog, manager: multiprocessing.Manager, pool):
         Dialog.setObjectName("Dialog")
         Dialog.setEnabled(True)
         Dialog.resize(530, 440)
@@ -82,7 +87,9 @@ class Ui_Dialog(QtCore.QObject):
         self.logWidget.setReadOnly(True)
         self.verticalLayout.addWidget(self.logWidget)
 
-        self.q = multiprocessing.Manager().Queue()
+        self.manager = manager
+        self.pool = pool
+        self.q = manager.Queue()
         self.consumer = Consumer(self.q)
         self.consumer.popped.signal.connect(self.update_log_gui)
         self.consumer.start()
@@ -114,9 +121,12 @@ class Ui_Dialog(QtCore.QObject):
             self.listWidget.addItem(listItem)
 
     def browse(self):
-        dir_ = QtWidgets.QFileDialog.getExistingDirectory(None, 'Open Directory', './')
+        dir_ = QtWidgets.QFileDialog.getExistingDirectory(None,
+                                                          'Open Directory',
+                                                          './',
+                                                          QtWidgets.QFileDialog.DontUseNativeDialog)
         if dir_:
-            self.dirPathLineEdit.setText(dir_)
+            self.dirPathLineEdit.setText(dir_.replace("/", os.path.sep))
 
     def openResultDialog(self, selected_items, display_content):
         for file_info in display_content.values():
@@ -135,7 +145,7 @@ class Ui_Dialog(QtCore.QObject):
     def config_thread(self):
         self.worker_thread = QtCore.QThread()
         self.worker_thread.setObjectName('WorkerThread')
-        self.worker = Worker(self.q)
+        self.worker = Worker(self.q, self.manager, self.pool)
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.started.connect(self.worker.start)
         self.worker.finished.connect(self.worker_thread.quit)
@@ -194,9 +204,13 @@ class Ui_ResultDialog(object):
 if __name__ == "__main__":
     import sys
     QtCore.QThread.currentThread().setObjectName('MainThread')
+    manager = multiprocessing.Manager()
+    num_cores = multiprocessing.cpu_count()  # number of cpu core
+    pool = multiprocessing.Pool(num_cores)
+
     app = QtWidgets.QApplication(sys.argv)
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
-    ui.setupUi(Dialog)
+    ui.setupUi(Dialog, manager, pool)
     Dialog.show()
     sys.exit(app.exec_())

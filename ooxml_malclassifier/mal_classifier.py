@@ -367,7 +367,12 @@ def _classifier(root, file_, manager_dict, q):
         manager_dict['normal'].append(file_)
 
 
-def main(dir_path, q, output_path="output.json", verbose=False):
+def main(dir_path,
+         q,
+         manager: multiprocessing.Manager,
+         pool: multiprocessing.Pool,
+         output_path="output.json",
+         verbose=False):
 
     # arg set on edit configuration
 
@@ -375,7 +380,6 @@ def main(dir_path, q, output_path="output.json", verbose=False):
     root_path = dir_path
     input_list = os.listdir(root_path)
 
-    manager = multiprocessing.Manager()
     pool_dict = manager.dict()
     # Save Result Class
     pool_dict['malicious'] = manager.list()
@@ -387,8 +391,6 @@ def main(dir_path, q, output_path="output.json", verbose=False):
     if verbose is True:
         pool_dict['verbose'] = True
 
-    num_cores = multiprocessing.cpu_count()  # number of cpu core
-    pool = multiprocessing.Pool(num_cores)
     pool.starmap(_classifier, zip(repeat(root_path), input_list, repeat(pool_dict), repeat(q)))
     pool.close()
     pool.join()
