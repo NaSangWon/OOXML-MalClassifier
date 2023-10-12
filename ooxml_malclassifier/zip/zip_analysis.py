@@ -378,10 +378,11 @@ class Zip(object):
         self.all_header.append(header)
 
     def validate(self):
-        start_header_offset = self.local_file_headers[0].start_pos
-        if start_header_offset > 0:
-            self.logger.error("Inserted data found! (Data: %s)" % self.readBytes(0, start_header_offset),
-                              extra={"type": "Inserted data"})
+        if len(self.local_file_headers) > 0:
+            start_header_offset = self.local_file_headers[0].start_pos
+            if start_header_offset > 0:
+                self.logger.error("Inserted data found! (Data: %s)" % self.readBytes(0, start_header_offset),
+                                  extra={"type": "Inserted data"})
 
         lfh_count = len(self.local_file_headers)
         cd_count = len(self.central_directories)
@@ -395,12 +396,13 @@ class Zip(object):
         self.cross_validation()
         self.detect_file_slack()
 
-        eocd_end_offset =  self.end_of_central_directory.end_offset()
-        is_file_end = self.get_file_size() == eocd_end_offset
-        if not is_file_end:
-            self.logger.error("Appended data found! (Data: %s)"
-                              % self.readBytes(eocd_end_offset, self.get_file_size() - eocd_end_offset)[:100]
-                              , extra={"type": "Append data"})
+        if self.end_of_central_directory is not None:
+            eocd_end_offset =  self.end_of_central_directory.end_offset()
+            is_file_end = self.get_file_size() == eocd_end_offset
+            if not is_file_end:
+                self.logger.error("Appended data found! (Data: %s)"
+                                  % self.readBytes(eocd_end_offset, self.get_file_size() - eocd_end_offset)[:100]
+                                  , extra={"type": "Append data"})
 
 
     def cross_validation(self):
@@ -427,10 +429,11 @@ class Zip(object):
 
     def detect_structure_anomaly(self):
         # End of Central Directory
-        central_dir_offset = self.end_of_central_directory.header["central_dir_offset"]
-        real_central_dir_offset = self.central_directories[0].start_pos
-        if central_dir_offset != real_central_dir_offset:
-            self.logger.error('CentralDirectory anomaly found.', extra={"type": "Structure anomaly"})
+        if self.end_of_central_directory is not None:
+            central_dir_offset = self.end_of_central_directory.header["central_dir_offset"]
+            real_central_dir_offset = self.central_directories[0].start_pos
+            if central_dir_offset != real_central_dir_offset:
+                self.logger.error('CentralDirectory anomaly found.', extra={"type": "Structure anomaly"})
 
         offset_mapping = {}
         for h in self.local_file_headers:
@@ -460,17 +463,18 @@ class Zip(object):
     def detect_file_slack(self):
         lfh_count = len(self.local_file_headers)
         data_slack_headers = self.all_header[1:lfh_count + 1]
-        prev_header = self.all_header[0]
-        prev = prev_header.end_offset()
-        for header in data_slack_headers:
-            next = header.start_pos
-            if prev != next:
-                error_msg = 'File data slack in %s(%d) found!' % (prev_header.__class__.__name__, prev_header.index)
-                if next - prev > 0:
-                    error_msg += " (Data: %s)" % (self.readBytes(prev, next - prev))[:10]
-                self.logger.error(error_msg, extra={"type": "Data slack"})
-            prev_header = header
-            prev = header.end_offset()
+        if len(self.all_header) > 0:
+            prev_header = self.all_header[0]
+            prev = prev_header.end_offset()
+            for header in data_slack_headers:
+                next = header.start_pos
+                if prev != next:
+                    error_msg = 'File data slack in %s(%d) found!' % (prev_header.__class__.__name__, prev_header.index)
+                    if next - prev > 0:
+                        error_msg += " (Data: %s)" % (self.readBytes(prev, next - prev))[:10]
+                    self.logger.error(error_msg, extra={"type": "Data slack"})
+                prev_header = header
+                prev = header.end_offset()
 
     def get_file_size(self):
         with open(self.file_name, 'rb') as f:
